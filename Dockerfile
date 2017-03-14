@@ -1,24 +1,29 @@
 FROM python:3.5
 
+# create non-root user
+RUN adduser --disabled-password --gecos '' uwsgi
+
 # setup uWSGI
 RUN pip install uwsgi
-
-
-# setup NGINX
-ENV NGINX_VERSION 1.11.10-1~jessie
 
 RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys ABF5BD827BD9BF62 \
 	&& echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list \
 	&& apt-get update \
-	&& apt-get install -y ca-certificates nginx=${NGINX_VERSION} gettext-base \
+	&& apt-get install -y ca-certificates nginx gettext-base supervisor \
 	&& rm -rf /var/lib/apt/lists/*
 
+RUN gpasswd -a uwsgi www-data
+RUN gpasswd -a nginx www-data
 
-# forward request and error logs to docker log collector
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
-	&& ln -sf /dev/stderr /var/log/nginx/error.log
-EXPOSE 80 443
+RUN chown -R nginx /var/log/nginx /var/cache/nginx/ \
+	#&& touch /var/run/nginx.pid \
+	#&& chown -R nginx /var/run/nginx.pid \
+	&& mkdir /var/run/uwsgi && touch /var/run/uwsgi/socket.sock \
+	&& chown -R uwsgi:www-data /var/run/uwsgi/socket.sock \
+	&& chmod g+rwx /var/run/uwsgi/socket.sock \
+	&& chown -R uwsgi:www-data /var/run/uwsgi
 
+EXPOSE 8080
 
 # make NGINX run in foreground
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
@@ -29,18 +34,10 @@ COPY docker-config/nginx.conf /etc/nginx/conf.d/
 # copy uWSGI ini file to enable default dynamic uwsgi process number
 COPY docker-config/uwsgi.ini /etc/uwsgi/
 
-# install Supervisord
-RUN apt-get update && apt-get install -y supervisor \
-&& rm -rf /var/lib/apt/lists/*
 # custom Supervisord config
 COPY docker-config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker-config/supervisord-kill.py /usr/bin/
 
 CMD ["/usr/bin/supervisord"]
 
-# install flask
-RUN pip install flask
-# cofigure nginx for flask
-COPY docker-config/nginx.conf /etc/nginx/conf.d
-
-COPY ./app /app
 WORKDIR /app
