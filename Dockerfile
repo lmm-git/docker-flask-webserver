@@ -16,8 +16,8 @@ RUN gpasswd -a uwsgi www-data
 RUN gpasswd -a nginx www-data
 
 RUN chown -R nginx /var/log/nginx /var/cache/nginx/ \
-	#&& touch /var/run/nginx.pid \
-	#&& chown -R nginx /var/run/nginx.pid \
+	&& touch /var/run/nginx.pid \
+	&& chown -R nginx /var/run/nginx.pid \
 	&& mkdir /var/run/uwsgi && touch /var/run/uwsgi/socket.sock \
 	&& chown -R uwsgi:www-data /var/run/uwsgi/socket.sock \
 	&& chmod g+rwx /var/run/uwsgi/socket.sock \
