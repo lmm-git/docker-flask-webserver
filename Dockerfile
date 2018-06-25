@@ -6,8 +6,10 @@ RUN adduser --disabled-password --gecos '' uwsgi
 # setup uWSGI
 RUN pip install uwsgi
 
-RUN apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys ABF5BD827BD9BF62 \
-	&& echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list \
+RUN wget http://nginx.org/keys/nginx_signing.key \
+	&& apt-key add nginx_signing.key \
+	&& rm nginx_signing.key \
+	&& echo "deb http://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list \
 	&& apt-get update \
 	&& apt-get install -y ca-certificates nginx gettext-base supervisor \
 	&& rm -rf /var/lib/apt/lists/*
