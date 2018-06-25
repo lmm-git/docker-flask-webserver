@@ -1,4 +1,4 @@
-FROM python:3-slim
+FROM python:3
 
 # create non-root user
 RUN adduser --disabled-password --gecos '' uwsgi
